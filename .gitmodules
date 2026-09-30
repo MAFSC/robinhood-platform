@@ -1,0 +1,12 @@
+[submodule "lib/flow"]
+	path = lib/flow
+	url = https://github.com/sablier-labs/flow
+[submodule "lib/prb-math"]
+	path = lib/prb-math
+	url = https://github.com/PaulRBerg/prb-math
+[submodule "lib/openzeppelin-contracts"]
+	path = lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "lib/evm-utils"]
+	path = lib/evm-utils
+	url = https://github.com/sablier-labs/evm-utils
