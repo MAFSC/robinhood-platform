@@ -1,0 +1,26 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Foundry artifacts
+out/
+cache/
+broadcast/
+cache_hardhat/
+
+# Node
+node_modules/
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Frontend builds
+frontend/dist/
