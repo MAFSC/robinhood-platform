@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Viewer — Ad Exchange</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);color:#fff;min-height:100vh;padding:20px}
+.container{max-width:1100px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:24px}
+h1{font-size:1.5rem}
+h1 span{color:#00d4ff}
+a.back{color:rgba(255,255,255,.5);text-decoration:none;font-size:.9rem}
+a.back:hover{color:#fff}
+.card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:24px;margin-bottom:20px}
+.card h2{font-size:1.2rem;color:#00d4ff;margin-bottom:16px}
+.btn{padding:12px 24px;border:none;border-radius:8px;cursor:pointer;font-size:1rem;font-weight:600;transition:all .3s;margin-bottom:8px}
+.btn-primary{background:linear-gradient(135deg,#00d4ff,#7b2ff7);color:#fff;width:100%}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,212,255,.4)}
+.btn-secondary{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);width:100%}
+.btn-sm{padding:8px 16px;font-size:.85rem;width:auto}
+.status{padding:12px;border-radius:8px;font-size:.85rem;margin-top:12px;word-break:break-all}
+.status.success{background:rgba(0,255,100,.1);color:#4ade80;border:1px solid rgba(0,255,100,.3)}
+.status.error{background:rgba(255,0,0,.1);color:#f87171;border:1px solid rgba(255,0,0,.3)}
+.status.info{background:rgba(0,212,255,.1);color:#00d4ff;border:1px solid rgba(0,212,255,.3)}
+.wallet{font-size:.85rem;color:rgba(255,255,255,.6)}
+.wallet code{background:rgba(0,0,0,.4);padding:2px 6px;border-radius:4px;font-family:monospace}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.campaign-card{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px;transition:all .3s}
+.campaign-card:hover{border-color:#00d4ff}
+.campaign-card h3{font-size:1rem;margin-bottom:8px;color:#fff}
+.campaign-card .meta{font-size:.8rem;color:rgba(255,255,255,.6);margin-bottom:12px;line-height:1.5}
+.campaign-card .meta b{color:#00d4ff}
+.watch-area{margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.1)}
+.preview{width:100%;aspect-ratio:16/9;background:#000;border-radius:8px;margin-bottom:12px;border:0}
+.actions{display:flex;gap:8px;margin-top:12px}
+.actions .btn{flex:1}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>👀 Viewer <span>Dashboard</span></h1>
+<a class="back" href="index.html">← Back</a>
+</header>
+
+<div class="card" id="connectCard">
+<h2>Connect Wallet</h2>
+<button id="connectBtn" class="btn btn-primary">Connect MetaMask</button>
+</div>
+
+<div class="card" id="walletPanel" style="display:none">
+<h2>Wallet</h2>
+<div class="wallet">
+Address: <code id="walletAddress">-</code><br>
+Chain ID: <code id="chainId">-</code><br>
+Balance: <code id="balance">-</code> ETH
+</div>
+<button id="switchNetworkBtn" class="btn btn-secondary" style="margin-top:12px">Switch to Robinhood Testnet</button>
+<button id="refreshBtn" class="btn btn-secondary">Refresh</button>
+</div>
+
+<div class="card" id="campaignsCard" style="display:none">
+<h2>Available Campaigns</h2>
+<button id="loadBtn" class="btn btn-secondary">Refresh Campaigns</button>
+<div id="campaignsList" class="grid" style="margin-top:16px"></div>
+</div>
+
+<div class="card" id="sessionsCard" style="display:none">
+<h2>My Watching Sessions</h2>
+<button id="loadSessionsBtn" class="btn btn-secondary">Load My Sessions</button>
+<div id="sessionsList" style="margin-top:16px"></div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+<script>
+const CONFIG = {
+  CHAIN_ID_HEX: '0xB646',
+  CHAIN_NAME: 'Robinhood Chain Testnet',
+  RPC_URL: 'https://rpc.testnet.chain.robinhood.com',
+  EXPLORER: 'https://explorer.testnet.chain.robinhood.com',
+  CONTRACTS: {
+    TOKEN:    '0x6400f658357751ab22B9Bb3C1101532C91cfCb94',
+    FLOW:     '0xbEeFed3671D12250cF77765203f52E0FCD1aB1F6',
+    REGISTRY: '0x493A40368E6B6E95479ef07f1a6bD70EB65216A8',
+    MANAGER:  '0x99856EA3b8b31cF4dA170ca05F48D6468C8E3e1e'
+  }
+};
+const MANAGER_ABI = [
+  'function getActiveCampaigns() view returns (uint256[])',
+  'function getCampaign(uint256 campaignId) view returns (tuple(address advertiser, address token, string contentURI, string title, uint128 totalBudget, uint128 spentBudget, uint128 tier1Rate, uint128 tier2Rate, uint32 tier1Limit, uint32 tier1Count, uint32 totalViewers, uint40 createdAt, uint40 expiresAt, bool isActive))',
+  'function joinCampaign(uint256 campaignId) returns (uint256)',
+  'function resumeViewing(uint256 sessionId)',
+  'function pauseViewing(uint256 sessionId)',
+  'function withdrawRewards(uint256 sessionId)',
+  'function getWithdrawableAmount(uint256 sessionId) view returns (uint128)',
+  'function getViewerSessions(address viewer) view returns (uint256[])',
+  'function getSession(uint256 sessionId) view returns (tuple(uint256 campaignId, uint256 streamId, address viewer, uint128 ratePerSecond, uint40 startedAt, uint40 lastUpdateAt, uint128 earned, bool isActive))',
+  'function nextSessionId() view returns (uint256)'
+];
+
+let provider, signer, account, managerContract;
+function logTo(id,msg,type){const el=document.getElementById(id);if(el){el.className='status '+type;el.textContent=msg}}
+function fu(v,d=6){return ethers.formatUnits(v,d)}
+
+function ytEmbed(url){
+  if(!url) return null;
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+  return m ? 'https://www.youtube.com/embed/' + m[1] : null;
+}
+
+async function connect(){
+  if(!window.ethereum){alert('Install MetaMask');return}
+  provider=new ethers.BrowserProvider(window.ethereum);
+  const a=await provider.send('eth_requestAccounts',[]);
+  account=a[0];
+  signer=await provider.getSigner();
+  managerContract=new ethers.Contract(CONFIG.CONTRACTS.MANAGER,MANAGER_ABI,signer);
+  document.getElementById('connectCard').style.display='none';
+  document.getElementById('walletPanel').style.display='block';
+  document.getElementById('campaignsCard').style.display='block';
+  document.getElementById('sessionsCard').style.display='block';
+  document.getElementById('walletAddress').textContent=account;
+  const net=await provider.getNetwork();
+  document.getElementById('chainId').textContent=net.chainId;
+  await refreshBalance();
+  await loadCampaigns();
+}
+async function refreshBalance(){
+  if(!provider||!account)return;
+  const b=await provider.getBalance(account);
+  document.getElementById('balance').textContent=ethers.formatEther(b);
+}
+async function switchNetwork(){
+  try{
+    await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:CONFIG.CHAIN_ID_HEX}]});
+  }catch(e){
+    if(e.code===4902){
+      await window.ethereum.request({method:'wallet_addEthereumChain',params:[{
+        chainId:CONFIG.CHAIN_ID_HEX,chainName:CONFIG.CHAIN_NAME,
+        nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},
+        rpcUrls:[CONFIG.RPC_URL],blockExplorerUrls:[CONFIG.EXPLORER]
+      }]});
+    }
+  }
+}
+
+async function loadCampaigns(){
+  const ids = await managerContract.getActiveCampaigns();
+  const list = document.getElementById('campaignsList');
+  list.innerHTML='';
+  if(ids.length===0){list.innerHTML='<p style="color:rgba(255,255,255,.5)">No active campaigns</p>';return}
+  for(const id of ids){
+    const c = await managerContract.getCampaign(id);
+    const embed = ytEmbed(c.contentURI);
+    const card = document.createElement('div');
+    card.className='campaign-card';
+    card.innerHTML =
+      '<h3>' + c.title + '</h3>' +
+      '<div class="meta">' +
+      'Campaign #' + id + '<br>' +
+      'Budget: <b>' + fu(c.totalBudget) + '</b> axUSDG<br>' +
+      'Viewers: <b>' + c.totalViewers + '</b> | Tier1: <b>' + c.tier1Count + '/' + c.tier1Limit + '</b><br>' +
+      'Tier1 rate: <b>' + fu(c.tier1Rate) + '/s</b> | Tier2 rate: <b>' + fu(c.tier2Rate) + '/s</b>' +
+      '</div>' +
+      (embed ? '<iframe class="preview" src="' + embed + '" allowfullscreen></iframe>' : '') +
+      '<button class="btn btn-primary" onclick="joinAndWatch(' + id + ')">Join & Watch</button>' +
+      '<div id="status-' + id + '"></div>';
+    list.appendChild(card);
+  }
+}
+async function joinAndWatch(campaignId){
+  try{
+    logTo('status-'+campaignId,'Joining...','info');
+    const tx = await managerContract.joinCampaign(campaignId);
+    await tx.wait();
+    const nextId = await managerContract.nextSessionId();
+    const sessionId = Number(nextId) - 1;
+    logTo('status-'+campaignId,'Joined! Session #'+sessionId+'. Starting...','success');
+    await managerContract.resumeViewing(sessionId);
+    logTo('status-'+campaignId,'Watching! Session #'+sessionId+' is earning. Go to My Sessions to manage.','success');
+  }catch(e){logTo('status-'+campaignId,'Error: '+e.message,'error')}
+}
+
+async function loadSessions(){
+  try{
+    const ids = await managerContract.getViewerSessions(account);
+    const list = document.getElementById('sessionsList');
+    list.innerHTML='';
+    if(ids.length===0){list.innerHTML='<p style="color:rgba(255,255,255,.5)">No sessions yet. Join a campaign first.</p>';return}
+    for(const id of ids){
+      const s = await managerContract.getSession(id);
+      const c = await managerContract.getCampaign(s.campaignId);
+      const withdrawable = await managerContract.getWithdrawableAmount(id);
+      const div=document.createElement('div');
+      div.className='campaign-card';
+      div.style.marginBottom='12px';
+      div.innerHTML =
+        '<h3>Session #' + id + ' — ' + c.title + '</h3>' +
+        '<div class="meta">' +
+        'Campaign #' + s.campaignId + ' | Rate: <b>' + fu(s.ratePerSecond) + '/s</b><br>' +
+        'Earned: <b>' + fu(s.earned) + '</b> axUSDG<br>' +
+        'Withdrawable: <b>' + fu(withdrawable) + '</b> axUSDG' +
+        '</div>' +
+        '<div class="actions">' +
+        '<button class="btn btn-secondary btn-sm" onclick="resume(' + id + ')">▶ Resume</button>' +
+        '<button class="btn btn-secondary btn-sm" onclick="pause(' + id + ')">⏸ Pause</button>' +
+        '<button class="btn btn-primary btn-sm" onclick="withdraw(' + id + ')">💰 Withdraw</button>' +
+        '</div>' +
+        '<div id="sess-status-' + id + '"></div>';
+      list.appendChild(div);
+    }
+  }catch(e){alert('Error: '+e.message)}
+}
+async function resume(id){
+  try{ const tx=await managerContract.resumeViewing(id); await tx.wait(); logTo('sess-status-'+id,'Resumed','success'); }
+  catch(e){ logTo('sess-status-'+id,'Error: '+e.message,'error') }
+}
+async function pause(id){
+  try{ const tx=await managerContract.pauseViewing(id); await tx.wait(); logTo('sess-status-'+id,'Paused','success'); }
+  catch(e){ logTo('sess-status-'+id,'Error: '+e.message,'error') }
+}
+async function withdraw(id){
+  try{
+    logTo('sess-status-'+id,'Withdrawing...','info');
+    const tx=await managerContract.withdrawRewards(id);
+    await tx.wait();
+    logTo('sess-status-'+id,'Withdrawn!','success');
+    await refreshBalance();
+  }catch(e){ logTo('sess-status-'+id,'Error: '+e.message,'error') }
+}
+
+document.getElementById('connectBtn').addEventListener('click',connect);
+document.getElementById('switchNetworkBtn').addEventListener('click',switchNetwork);
+document.getElementById('refreshBtn').addEventListener('click',refreshBalance);
+document.getElementById('loadBtn').addEventListener('click',loadCampaigns);
+document.getElementById('loadSessionsBtn').addEventListener('click',loadSessions);
+</script>
+</body>
+</html>
