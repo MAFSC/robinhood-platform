@@ -1,3 +1,5 @@
 @sablier/flow/=lib/flow/
+@sablier/evm-utils/=lib/evm-utils/
 @openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
-@prb/math/=lib/prb-math/src/
+@prb/math/=lib/prb-math/
+forge-std/=lib/forge-std/src/
