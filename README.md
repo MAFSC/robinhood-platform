@@ -1,66 +1,48 @@
-## Foundry
+# Ad Exchange on Blockchain
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Decentralized advertising exchange on Robinhood Chain (Arbitrum L2) where advertisers pay viewers for watching ads.
 
-Foundry consists of:
+## Deployed Contracts (Robinhood Chain Testnet, Chain ID: 46630)
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+| Contract | Address |
+|----------|---------|
+| AdExchangeToken (axUSDG) | `0xceC312921CaaaBa9b8091F1eb18FeedC529Fe9EC` |
+| MockStreamFlow | `0x9b4e9f5A3E4aC4877CA3C77C14a16884C75D98a7` |
+| AdvertiserRegistry | `0x614A438473815A077AA3809Ab8ed035280Cd0675` |
+| AdExchangeManager | `0xa8d30976b3084Ad559C6C53CC3c3E608013Ee1f7` |
 
-## Documentation
+## How it works
 
-https://book.getfoundry.sh/
+1. Advertiser creates a campaign with budget, tier1/tier2 rates, and viewer limit.
+2. Viewer joins the campaign and starts watching.
+3. Rewards accrue per second based on tier rate.
+4. Viewer withdraws rewards anytime.
 
-## Usage
+## Setup
 
-### Build
+    git clone git@github.com:MAFSC/robinhood-platform.git
+    cd robinhood-platform
 
-```shell
-$ forge build
-```
+    curl -L https://foundry.paradigm.xyz | bash
+    foundryup
 
-### Test
+    forge install foundry-rs/forge-std
+    forge install OpenZeppelin/openzeppelin-contracts
+    forge install PaulRBerg/prb-math
+    forge install sablier-labs/flow
+    forge install sablier-labs/evm-utils
 
-```shell
-$ forge test
-```
+    forge build
 
-### Format
+## Deploy
 
-```shell
-$ forge fmt
-```
+    cp .env.example .env
+    # Edit .env with your PRIVATE_KEY
 
-### Gas Snapshots
+    forge script script/DeployAdExchange.s.sol:DeployAdExchange \
+      --rpc-url https://rpc.testnet.chain.robinhood.com \
+      --broadcast
 
-```shell
-$ forge snapshot
-```
+## Frontend
 
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+See `docs/index.html`.
