@@ -6,10 +6,10 @@ Decentralized advertising exchange on Robinhood Chain (Arbitrum L2) where advert
 
 | Contract | Address |
 |----------|---------|
-| AdExchangeToken (axUSDG) | `0xceC312921CaaaBa9b8091F1eb18FeedC529Fe9EC` |
-| MockStreamFlow | `0x9b4e9f5A3E4aC4877CA3C77C14a16884C75D98a7` |
-| AdvertiserRegistry | `0x614A438473815A077AA3809Ab8ed035280Cd0675` |
-| AdExchangeManager | `0xa8d30976b3084Ad559C6C53CC3c3E608013Ee1f7` |
+| AdExchangeToken (axUSDG) | `0x6400f658357751ab22B9Bb3C1101532C91cfCb94` |
+| MockStreamFlow | `0xbEeFed3671D12250cF77765203f52E0FCD1aB1F6` |
+| AdvertiserRegistry | `0x493A40368E6B6E95479ef07f1a6bD70EB65216A8` |
+| AdExchangeManager | `0x99856EA3b8b31cF4dA170ca05F48D6468C8E3e1e` |
 
 ## How it works
 
