@@ -3,15 +3,19 @@
 .env.*
 !.env.example
 
-# Foundry artifacts
+# Foundry
 out/
 cache/
 broadcast/
-cache_hardhat/
+foundry.lock
 
 # Node
 node_modules/
 package-lock.json
+npm-debug.log*
+
+# Libraries (install via `forge install`)
+lib/
 
 # OS
 .DS_Store
